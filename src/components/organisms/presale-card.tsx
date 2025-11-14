@@ -19,6 +19,7 @@ import Image from "next/image"
 
 import buttonImg from "../../../public/home/button.svg"
 import cryptoSmImg from "../../../public/common/crypot-sm.svg"
+import usdtSmImg from "../../../public/common/usdt-sm.svg"
 import gokuSmImg from "../../../public/common/gok-sm.svg"
 
 interface PresaleCardProps {
@@ -84,24 +85,23 @@ export const PresaleCard: React.FC<PresaleCardProps> = ({ onInfoClick }) => {
   const { presale, loading, error } = usePresale({ networkId: 1337, address: address || "" });
 
   const handleConnectWallet = async () => {
-    if(isConnected) {
-      await disconnect({ namespace: "eip155" });
-      return;
+    if(!isConnected) {
+      await open({
+        view: "Networks",
+      });
     }
 
-    await open({
-      view: "Connect",
-    });
+    await open({view: "Connect", namespace: "eip155" });
   }
 
   const handleTokenAmount = async (e: string) => {
     const provider = new BrowserProvider(walletProvider)
+    console.log(chainId)
     const contract = new Contract(presaleSpecs[chainId as number || 1337].presaleAddress, presaleAbi, provider)
     
     const value = currency === "ETH" ? new BigNumber(e).multipliedBy(new BigNumber(presale?.ethPrice.toString() || "0")).shiftedBy(-6).toString() : e;
-    console.log(presale?.ethPrice.toString())
     const result = await contract.getTokenAmountByValue(new BigNumber(parseInt(value)).multipliedBy(10**6).toString(), address);
-    
+
     const {0: calcAmount, 1: tokenBonus, 2: calcBonusEligable} = result;
 
     setTokenAmount(new BigNumber(calcAmount).plus(new BigNumber(tokenBonus)).toString())
@@ -110,9 +110,10 @@ export const PresaleCard: React.FC<PresaleCardProps> = ({ onInfoClick }) => {
   const handleChangeAmount = (e: string) => {
     if(isNaN(e as unknown as number)) {
       setAmount("")
-    } else {
-      setAmount(e)
+      return;
     }
+
+    setAmount(e)
 
     if(parseFloat(e) > 0) {
       setTokenAmount("0.00")
@@ -221,7 +222,7 @@ export const PresaleCard: React.FC<PresaleCardProps> = ({ onInfoClick }) => {
             onChange={handleChangeAmount}
             placeholder="0.00"
             className="text-fill-color py-4"
-            icon={<span><Image src={cryptoSmImg} alt='crypto-sm' /></span>}
+            icon={<span><Image src={currency === "ETH" ? cryptoSmImg : usdtSmImg} alt='crypto-sm' /></span>}
           />
         </div>
 
